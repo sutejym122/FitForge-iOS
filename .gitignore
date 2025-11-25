@@ -1,0 +1,32 @@
+# Xcode
+DerivedData/
+*.xcworkspace
+!default.xcworkspace
+xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata
+*.xcodeproj/xcshareddata/WorkspaceSettings.xcsettings
+
+# Swift Package Manager
+.build/
+Packages/
+Package.resolved
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# Carthage
+Carthage/
+
+# Archives
+*.ipa
+*.xcarchive
+
+# Logs
+*.log
