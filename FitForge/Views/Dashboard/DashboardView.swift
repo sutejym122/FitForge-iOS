@@ -5,12 +5,14 @@
 //  Created by Sutej  Ym  on 11/13/25.
 //
 
-
 import SwiftUI
 
 struct DashboardView: View {
 
     @EnvironmentObject var mealPlanStore: MealPlanStore
+    
+  
+
 
     @State private var showMealPlan = false
     @State private var mealPlanResponse: String = ""
@@ -27,11 +29,13 @@ struct DashboardView: View {
     // These are guaranteed to exist because ContentView checks them
     private let profile: UserProfile = ProfileStorage.shared.currentProfile!
     private let result: MetabolicResult
+    
+    @StateObject private var healthManager = HealthManager()
 
     init() {
-        self.result = MetabolicCalculator.calculate(
-            profile: ProfileStorage.shared.currentProfile!
-        )
+        let currentProfile = ProfileStorage.shared.currentProfile!
+        self.result = MetabolicCalculator.calculate(profile: currentProfile)
+        _healthManager = StateObject(wrappedValue: HealthManager())
     }
 
     // MARK: - Country Name Helper
@@ -82,8 +86,8 @@ struct DashboardView: View {
                         // MARK: - Greeting Header
                         headerSection
 
-                        // MARK: - Mini Progress Rings (Option D)
-                        ProgressRingsRow()
+                        // MARK: - Weekly Progress Rings
+                        ProgressRingsRow(healthManager: healthManager)
                             .padding(.top, 4)
                             .padding(.bottom, 6)
 
@@ -92,12 +96,16 @@ struct DashboardView: View {
                             .font(.title2.bold())
                             .frame(maxWidth: .infinity, alignment: .leading)
 
-                        CalorieCard(result: result)
+                        CalorieCard(result: result, profile: profile)
 
                         // MARK: - Macro Breakdown
                         Text("Macro Breakdown")
                             .font(.title2.bold())
                             .frame(maxWidth: .infinity, alignment: .leading)
+
+                        // NEW: Macro Cards Row
+                        MacroCardsRow(result: result)
+                            .padding(.bottom, 4)
 
                         MacroChart(result: result)
                             .frame(height: 250)
@@ -324,46 +332,225 @@ private struct SummaryMiniCard: View {
     }
 }
 
-//
-// MARK: - Progress Rings Row (Option D)
-//
-private struct ProgressRingsRow: View {
-    var body: some View {
-        HStack(spacing: 20) {
+// MARK: - Macro Cards Row
+private struct MacroCardsRow: View {
+    let result: MetabolicResult
 
-            ringItem(color: .red, title: "Move", value: "-- kcal")
-            ringItem(color: .green, title: "Exercise", value: "-- min")
-            ringItem(color: .blue, title: "Stand", value: "-- hrs")
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 6)
+    private var totalGrams: Double {
+        max(result.protein + result.carbs + result.fats, 1) // avoid divide-by-zero
     }
 
-    private func ringItem(color: Color, title: String, value: String) -> some View {
-        VStack(spacing: 4) {
-            ZStack {
-                Circle()
-                    .stroke(color.opacity(0.2), lineWidth: 6)
-                    .frame(width: 34, height: 34)
-
-                Circle()
-                    .trim(from: 0, to: 0.33)
-                    .stroke(color, style: StrokeStyle(lineWidth: 6, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-                    .frame(width: 34, height: 34)
-            }
-
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.primary.opacity(0.8))
-
-            Text(value)
-                .font(.caption2)
-                .foregroundColor(.secondary)
+    var body: some View {
+        HStack(spacing: 12) {
+            MacroStatCard(
+                title: "Protein",
+                emoji: "🥩",
+                grams: result.protein,
+                color: .pink,
+                totalGrams: totalGrams
+            )
+            MacroStatCard(
+                title: "Carbs",
+                emoji: "🍚",
+                grams: result.carbs,
+                color: .orange,
+                totalGrams: totalGrams
+            )
+            MacroStatCard(
+                title: "Fats",
+                emoji: "🥑",
+                grams: result.fats,
+                color: .yellow,
+                totalGrams: totalGrams
+            )
         }
-        .frame(maxWidth: .infinity)
     }
 }
+
+// MARK: - Single Macro Stat Card
+private struct MacroStatCard: View {
+    let title: String
+    let emoji: String
+    let grams: Double
+    let color: Color
+    let totalGrams: Double
+
+    private var percentageText: String {
+        let pct = (grams / totalGrams) * 100
+        return "\(Int(pct.rounded()))%"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+
+            HStack(spacing: 6) {
+                Text(emoji)
+                    .font(.subheadline)
+                Text(title)
+                    .font(.subheadline.bold())
+                    .foregroundColor(.primary)
+            }
+
+            Text("\(Int(grams)) g")
+                .font(.headline)
+                .foregroundColor(.primary)
+
+            Text(percentageText)
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            Spacer(minLength: 0)
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, minHeight: 70, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(.systemBackground))
+                .shadow(color: color.opacity(0.12), radius: 6, x: 0, y: 3)
+        )
+    }
+}
+
+// MARK: - Ring Metric Model
+private struct RingMetric: Identifiable {
+    let id = UUID()
+    let title: String
+    let valueText: String
+    let progress: Double   // 0...1
+    let color: Color
+}
+
+// MARK: - Progress Rings Row (Weekly / Today Progress with HealthKit)
+private struct ProgressRingsRow: View {
+
+    @ObservedObject var healthManager: HealthManager
+
+    private var metrics: [RingMetric] {
+        let active = healthManager.activeEnergyToday
+        let activeGoal = max(healthManager.activeEnergyGoal, 1)
+        let activeProgress = min(active / activeGoal, 1.0)
+
+        let steps = healthManager.stepsToday
+        let stepsGoal = max(healthManager.stepsGoal, 1)
+        let stepsProgress = min(steps / stepsGoal, 1.0)
+
+        let water = healthManager.hydrationLitersToday
+        let waterGoal = max(healthManager.hydrationGoalLiters, 0.1)
+        let waterProgress = min(water / waterGoal, 1.0)
+
+        let sleepTotal = healthManager.sleepTotalHours
+        let sleepGoal: Double = 8.0
+        let sleepProgress = min(sleepTotal / sleepGoal, 1.0)
+
+        // Sleep style 3: show stage breakdown in compact form when data exists
+        let deep = healthManager.sleepDeepHours
+        let core = healthManager.sleepCoreHours
+        let rem = healthManager.sleepRemHours
+
+        let sleepValueText: String
+        if sleepTotal > 0 {
+            let tf = { (value: Double) -> String in
+                String(format: "%.1f", value)
+            }
+            sleepValueText = "\(tf(sleepTotal))h  D\(tf(deep)) C\(tf(core)) R\(tf(rem))"
+        } else {
+            sleepValueText = "-- hrs"
+        }
+
+        return [
+            RingMetric(
+                title: "Calories",
+                valueText: activeGoal > 0 ? "\(Int(active))/\(Int(activeGoal)) kcal" : "-- / --",
+                progress: activeProgress,
+                color: .red
+            ),
+            RingMetric(
+                title: "Steps",
+                valueText: stepsGoal > 0 ? "\(Int(steps))/\(Int(stepsGoal))" : "-- / --",
+                progress: stepsProgress,
+                color: .green
+            ),
+            RingMetric(
+                title: "Hydration",
+                valueText: waterGoal > 0 ? "\(String(format: "%.1f", water))/\(String(format: "%.1f", waterGoal)) L" : "-- / -- L",
+                progress: waterProgress,
+                color: .blue
+            ),
+            RingMetric(
+                title: "Sleep",
+                valueText: sleepValueText,
+                progress: sleepProgress,
+                color: .purple
+            )
+        ]
+    }
+
+    var body: some View {
+        HStack(spacing: 14) {
+            ForEach(metrics) { metric in
+                VStack(spacing: 6) {
+
+                    ProgressRing(
+                        progress: metric.progress,
+                        size: 52,
+                        ringWidth: 6,
+                        color: metric.color
+                    )
+
+                    Text(metric.title)
+                        .font(.caption)
+                        .foregroundColor(.primary.opacity(0.9))
+
+                    Text(metric.valueText)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+// MARK: - Progress Ring View
+private struct ProgressRing: View {
+    let progress: Double
+    let size: CGFloat
+    let ringWidth: CGFloat
+    let color: Color
+
+    @State private var animatedProgress: Double = 0
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(color.opacity(0.15), lineWidth: ringWidth)
+
+            Circle()
+                .trim(from: 0, to: min(animatedProgress, 1.0))
+                .stroke(
+                    color,
+                    style: StrokeStyle(lineWidth: ringWidth, lineCap: .round)
+                )
+                .rotationEffect(.degrees(-90))
+        }
+        .frame(width: size, height: size)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.8)) {
+                animatedProgress = progress
+            }
+        }
+        .onChange(of: progress) { oldValue, newValue in
+            withAnimation(.easeOut(duration: 0.6)) {
+                animatedProgress = newValue
+            }
+        }
+    }
+}
+
+
+
 
 
 
