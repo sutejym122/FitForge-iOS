@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+"http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+
+    <!-- =======================================
+                BASIC APP METADATA
+    ======================================== -->
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+
+    <key>CFBundleName</key>
+    <string>$(PRODUCT_NAME)</string>
+
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+
+    <key>CFBundleVersion</key>
+    <string>1</string>
+
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+
+
+    <!-- =======================================
+                    LAUNCH SCREEN
+    ======================================== -->
+    <!-- Required for modern screen sizes to avoid zoom mode -->
+    <key>UILaunchScreen</key>
+    <dict/>
+
+
+    <!-- =======================================
+                  HEALTHKIT PERMISSIONS
+    ======================================== -->
+    <key>NSHealthShareUsageDescription</key>
+    <string>FitForge uses Health data to show your activity, nutrition, hydration, and sleep.</string>
+
+    <key>NSHealthUpdateUsageDescription</key>
+    <string>FitForge updates your Health data for more accurate fitness and metabolic tracking.</string>
+
+    <!-- Optional but App Store–friendly -->
+    <key>NSHealthClinicalHealthRecordsShareUsageDescription</key>
+    <string>FitForge uses your Health Records to improve wellness insights and recommendations.</string>
+
+
+    <!-- =======================================
+                  PRIVACY PERMISSIONS
+    ======================================== -->
+
+    <!-- Photo picker for user avatars -->
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>FitForge uses your photo library to let you choose a profile picture.</string>
+
+    <!-- If camera is ever used for profile photos -->
+    <key>NSCameraUsageDescription</key>
+    <string>FitForge uses the camera to let you take a profile photo.</string>
+
+    <!-- If you enable FaceID login later -->
+    <key>NSFaceIDUsageDescription</key>
+    <string>FitForge uses Face ID to securely authenticate your account.</string>
+
+    <!-- If you show local notifications -->
+    <key>NSUserNotificationUsageDescription</key>
+    <string>FitForge sends reminders to help you stay consistent with your fitness goals.</string>
+
+
+    <!-- =======================================
+             APP TRANSPORT SECURITY (ATS)
+    ======================================== -->
+    <!-- Allows localhost API during development but remains App Store–safe -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <!-- Localhost allowed, everything else still secure -->
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+    </dict>
+
+
+    <!-- =======================================
+                OPTIONAL BUT USEFUL
+    ======================================== -->
+
+    <!-- Privacy policy for App Store -->
+    <key>NSPrivacyPolicyURL</key>
+    <string>https://your-domain.com/privacy</string>
+
+    <!-- Terms of service (optional but recommended) -->
+    <key>NSHumanReadableCopyright</key>
+    <string>© 2025 FitForge. All rights reserved.</string>
+
+</dict>
+</plist>
