@@ -472,6 +472,7 @@ struct DashboardView: View {
                     protein: proteinInt,
                     carbs: carbsInt,
                     fats: fatsInt,
+                    dietPreference: dietPreference.rawValue,
                     rawJSON: text
                 )
 
