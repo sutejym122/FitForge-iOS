@@ -6,7 +6,20 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		4EA3EE6B2EE79466009B2A31 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4EA3EE6A2EE79466009B2A31 /* WidgetKit.framework */; };
+		4EA3EE6D2EE79466009B2A31 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4EA3EE6C2EE79466009B2A31 /* SwiftUI.framework */; };
+		4EA3EE7E2EE79468009B2A31 /* FitForgeWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4EA3EE682EE79466009B2A31 /* FitForgeWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
+		4EA3EE7C2EE79468009B2A31 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4EB2F5CB2EC3FE11005D406B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4EA3EE672EE79466009B2A31;
+			remoteInfo = FitForgeWidgetsExtension;
+		};
 		4EB2F5E42EC3FE13005D406B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 4EB2F5CB2EC3FE11005D406B /* Project object */;
@@ -23,7 +36,24 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		4EA3EE832EE79468009B2A31 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				4EA3EE7E2EE79468009B2A31 /* FitForgeWidgetsExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		4EA3EE682EE79466009B2A31 /* FitForgeWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FitForgeWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		4EA3EE6A2EE79466009B2A31 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		4EA3EE6C2EE79466009B2A31 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		4EB2F5D32EC3FE11005D406B /* FitForge.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FitForge.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4EB2F5E32EC3FE13005D406B /* FitForgeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FitForgeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4EB2F5ED2EC3FE13005D406B /* FitForgeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FitForgeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -37,13 +67,37 @@
 			);
 			target = 4EB2F5D22EC3FE11005D406B /* FitForge */;
 		};
+		4EA3EE822EE79468009B2A31 /* Exceptions for "FitForgeWidgets" folder in "FitForgeWidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 4EA3EE672EE79466009B2A31 /* FitForgeWidgetsExtension */;
+		};
+		4EA3EE8A2EE8DB36009B2A31 /* Exceptions for "FitForge" folder in "FitForgeWidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Shared/WidgetData.swift,
+				Shared/WidgetDataProvider.swift,
+			);
+			target = 4EA3EE672EE79466009B2A31 /* FitForgeWidgetsExtension */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		4EA3EE6E2EE79466009B2A31 /* FitForgeWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4EA3EE822EE79468009B2A31 /* Exceptions for "FitForgeWidgets" folder in "FitForgeWidgetsExtension" target */,
+			);
+			path = FitForgeWidgets;
+			sourceTree = "<group>";
+		};
 		4EB2F5D52EC3FE11005D406B /* FitForge */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				4EA3EE3A2ED76483009B2A31 /* Exceptions for "FitForge" folder in "FitForge" target */,
+				4EA3EE8A2EE8DB36009B2A31 /* Exceptions for "FitForge" folder in "FitForgeWidgetsExtension" target */,
 			);
 			path = FitForge;
 			sourceTree = "<group>";
@@ -61,6 +115,15 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		4EA3EE652EE79466009B2A31 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4EA3EE6D2EE79466009B2A31 /* SwiftUI.framework in Frameworks */,
+				4EA3EE6B2EE79466009B2A31 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4EB2F5D02EC3FE11005D406B /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -85,12 +148,23 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		4EA3EE692EE79466009B2A31 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				4EA3EE6A2EE79466009B2A31 /* WidgetKit.framework */,
+				4EA3EE6C2EE79466009B2A31 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		4EB2F5CA2EC3FE11005D406B = {
 			isa = PBXGroup;
 			children = (
 				4EB2F5D52EC3FE11005D406B /* FitForge */,
 				4EB2F5E62EC3FE13005D406B /* FitForgeTests */,
 				4EB2F5F02EC3FE13005D406B /* FitForgeUITests */,
+				4EA3EE6E2EE79466009B2A31 /* FitForgeWidgets */,
+				4EA3EE692EE79466009B2A31 /* Frameworks */,
 				4EB2F5D42EC3FE11005D406B /* Products */,
 			);
 			sourceTree = "<group>";
@@ -101,6 +175,7 @@
 				4EB2F5D32EC3FE11005D406B /* FitForge.app */,
 				4EB2F5E32EC3FE13005D406B /* FitForgeTests.xctest */,
 				4EB2F5ED2EC3FE13005D406B /* FitForgeUITests.xctest */,
+				4EA3EE682EE79466009B2A31 /* FitForgeWidgetsExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -108,6 +183,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		4EA3EE672EE79466009B2A31 /* FitForgeWidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4EA3EE7F2EE79468009B2A31 /* Build configuration list for PBXNativeTarget "FitForgeWidgetsExtension" */;
+			buildPhases = (
+				4EA3EE642EE79466009B2A31 /* Sources */,
+				4EA3EE652EE79466009B2A31 /* Frameworks */,
+				4EA3EE662EE79466009B2A31 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				4EA3EE6E2EE79466009B2A31 /* FitForgeWidgets */,
+			);
+			name = FitForgeWidgetsExtension;
+			packageProductDependencies = (
+			);
+			productName = FitForgeWidgetsExtension;
+			productReference = 4EA3EE682EE79466009B2A31 /* FitForgeWidgetsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		4EB2F5D22EC3FE11005D406B /* FitForge */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4EB2F5F72EC3FE13005D406B /* Build configuration list for PBXNativeTarget "FitForge" */;
@@ -115,10 +212,12 @@
 				4EB2F5CF2EC3FE11005D406B /* Sources */,
 				4EB2F5D02EC3FE11005D406B /* Frameworks */,
 				4EB2F5D12EC3FE11005D406B /* Resources */,
+				4EA3EE832EE79468009B2A31 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				4EA3EE7D2EE79468009B2A31 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				4EB2F5D52EC3FE11005D406B /* FitForge */,
@@ -186,6 +285,9 @@
 				LastSwiftUpdateCheck = 1620;
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
+					4EA3EE672EE79466009B2A31 = {
+						CreatedOnToolsVersion = 16.2;
+					};
 					4EB2F5D22EC3FE11005D406B = {
 						CreatedOnToolsVersion = 16.2;
 					};
@@ -216,11 +318,19 @@
 				4EB2F5D22EC3FE11005D406B /* FitForge */,
 				4EB2F5E22EC3FE13005D406B /* FitForgeTests */,
 				4EB2F5EC2EC3FE13005D406B /* FitForgeUITests */,
+				4EA3EE672EE79466009B2A31 /* FitForgeWidgetsExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		4EA3EE662EE79466009B2A31 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4EB2F5D12EC3FE11005D406B /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -245,6 +355,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		4EA3EE642EE79466009B2A31 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4EB2F5CF2EC3FE11005D406B /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -269,6 +386,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		4EA3EE7D2EE79468009B2A31 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4EA3EE672EE79466009B2A31 /* FitForgeWidgetsExtension */;
+			targetProxy = 4EA3EE7C2EE79468009B2A31 /* PBXContainerItemProxy */;
+		};
 		4EB2F5E52EC3FE13005D406B /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 4EB2F5D22EC3FE11005D406B /* FitForge */;
@@ -282,6 +404,60 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		4EA3EE802EE79468009B2A31 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9AQ8K6YSLK;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FitForgeWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = FitForgeWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sutej.FitForge.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		4EA3EE812EE79468009B2A31 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9AQ8K6YSLK;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FitForgeWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = FitForgeWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sutej.FitForge.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		4EB2F5F52EC3FE13005D406B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -538,6 +714,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		4EA3EE7F2EE79468009B2A31 /* Build configuration list for PBXNativeTarget "FitForgeWidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4EA3EE802EE79468009B2A31 /* Debug */,
+				4EA3EE812EE79468009B2A31 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		4EB2F5CE2EC3FE11005D406B /* Build configuration list for PBXProject "FitForge" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

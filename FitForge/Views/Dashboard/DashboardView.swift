@@ -10,9 +10,6 @@ import SwiftUI
 struct DashboardView: View {
 
     @EnvironmentObject var mealPlanStore: MealPlanStore
-    
-  
-
 
     @State private var showMealPlan = false
     @State private var mealPlanResponse: String = ""
@@ -25,11 +22,24 @@ struct DashboardView: View {
     // Diet preference UI state
     @State private var showDietSheet = false
     @State private var selectedDietPreference: DietPreference = .mixed
+    
+    @StateObject var streakManager = StreakManager()
+    
+    @State private var showWeeklySummary = false
+    @State private var showWeeklyStats = false
+    @State private var showWorkoutCharts = false
+    @State private var showInsights = false
+
+
+
+    
+    @StateObject var workoutStore = WorkoutStore()
+
 
     // These are guaranteed to exist because ContentView checks them
     private let profile: UserProfile = ProfileStorage.shared.currentProfile!
     private let result: MetabolicResult
-    
+
     @StateObject private var healthManager = HealthManager()
 
     init() {
@@ -73,7 +83,7 @@ struct DashboardView: View {
         case "maintain":
             return "Staying consistent today."
         default:
-            return "Here’s your fitness summary for today."
+            return "Here's your fitness summary for today."
         }
     }
 
@@ -90,6 +100,112 @@ struct DashboardView: View {
                         ProgressRingsRow(healthManager: healthManager)
                             .padding(.top, 4)
                             .padding(.bottom, 6)
+
+                        // MARK: - Hydration Quick Add
+                        HydrationQuickAddView(healthManager: healthManager)
+                            .padding(.bottom, 4)
+
+                        // MARK: - Steps & Distance Section
+                        StepsDistanceSection(healthManager: healthManager)
+                            .padding(.top, 4)
+
+                        // MARK: - Streaks Row (NEW)
+                        StreaksRowView(healthManager: healthManager)
+                            .padding(.top, 2)
+                        
+                        // MARK: - Achievements Section
+                        AchievementsSectionView(
+                            healthManager: healthManager,
+                            result: result,
+                            streakManager: streakManager
+                        )
+                        .padding(.top, 4)
+                        
+                        Button(action: {
+                            showWeeklySummary = true
+                        }) {
+                            HStack {
+                                Text("View Weekly Summary")
+                                    .font(.headline)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color(.systemBackground))
+                                    .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
+                            )
+                        }
+                        .navigationDestination(isPresented: $showWeeklySummary) {
+                            WeeklySummaryView(healthManager: healthManager)
+                        }
+
+
+                        WorkoutsSectionView(workoutStore: workoutStore)
+                            .padding(.top, 8)
+                        
+                        Button {
+                            showWeeklyStats = true
+                        } label: {
+                            HStack {
+                                Text("View Detailed Stats")
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color(.systemBackground))
+                                    .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
+                            )
+                        }
+                        .navigationDestination(isPresented: $showWeeklyStats) {
+                            WeeklyStatsView(healthManager: healthManager, workoutStore: workoutStore)
+                        }
+                        
+                        Button(action: { showWorkoutCharts = true }) {
+                            HStack {
+                                Text("Workout Analytics")
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color(.systemBackground))
+                                    .shadow(color: .black.opacity(0.05), radius: 6)
+                            )
+                        }
+                        .navigationDestination(isPresented: $showWorkoutCharts) {
+                            WeeklyWorkoutChart(workoutStore: workoutStore)
+                        }
+                        
+                        Button {
+                            showInsights = true
+                        } label: {
+                            HStack {
+                                Text("AI Insights")
+                                    .font(.headline)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color(.systemBackground))
+                                    .shadow(color: .black.opacity(0.05), radius: 6)
+                            )
+                        }
+                        .navigationDestination(isPresented: $showInsights) {
+                            FitnessInsightsView(
+                                healthManager: healthManager,
+                                workoutStore: workoutStore
+                            )
+                        }
+
+
+
 
                         // MARK: - Daily Targets Header
                         Text("Daily Targets")
@@ -110,7 +226,7 @@ struct DashboardView: View {
                         MacroChart(result: result)
                             .frame(height: 250)
 
-                        // MARK: - Activity (Placeholders)
+                        // MARK: - Activity (Placeholders kept for future use)
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Activity")
                                 .font(.title2.bold())
@@ -184,6 +300,11 @@ struct DashboardView: View {
                     .transition(.opacity)
                 }
             }
+            
+            .onAppear { saveWidgetSnapshot() }
+                        .onChange(of: healthManager.stepsToday) { _, _ in saveWidgetSnapshot() }
+                        .onChange(of: healthManager.hydrationLitersToday) { _, _ in saveWidgetSnapshot() }
+                        .onChange(of: healthManager.activeEnergyToday) { _, _ in saveWidgetSnapshot() }
 
             // Profile Sheet
             .sheet(isPresented: $showProfile) {
@@ -307,7 +428,27 @@ struct DashboardView: View {
             }
         }
     }
+    private func saveWidgetSnapshot() {
+            let insights = FitnessInsightsEngine.generateInsights(
+                health: healthManager,
+                workouts: workoutStore
+            )
+
+            let firstInsight = insights.first?.text ?? "Stay active today!"
+
+            let data = WidgetData(
+                stepsToday: Int(healthManager.stepsToday),
+                hydrationToday: healthManager.hydrationLitersToday,
+                activeEnergyToday: healthManager.activeEnergyToday,
+                streak: streakManager.currentStreak,
+                weeklyInsight: firstInsight
+            )
+
+            WidgetDataProvider.save(data)
+        }
 }
+
+
 
 // MARK: - Small Summary Card UI
 private struct SummaryMiniCard: View {
@@ -549,11 +690,344 @@ private struct ProgressRing: View {
     }
 }
 
+// MARK: - Hydration Quick Add UI
+private struct HydrationQuickAddView: View {
+    @ObservedObject var healthManager: HealthManager
+
+    @State private var showCustomInput = false
+    @State private var customAmount = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+
+            Text("Hydration")
+                .font(.title3.bold())
+                .padding(.leading, 4)
+
+            HStack(spacing: 12) {
+
+                quickButton(amount: 0.25, label: "+250ml", color: .blue)
+                quickButton(amount: 0.5, label: "+500ml", color: .teal)
+                quickButton(amount: 1.0, label: "+1L", color: .indigo)
+
+                Button {
+                    showCustomInput = true
+                } label: {
+                    Text("Custom")
+                        .font(.subheadline.bold())
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(Color(.secondarySystemBackground))
+                        .cornerRadius(12)
+                }
+            }
+        }
+        .sheet(isPresented: $showCustomInput) {
+            customHydrationSheet
+        }
+    }
+
+    // MARK: - Quick Add Button
+    private func quickButton(amount: Double, label: String, color: Color) -> some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            healthManager.addManualWater(amountLiters: amount)
+        } label: {
+            Text(label)
+                .font(.subheadline.bold())
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(color.opacity(0.2))
+                .foregroundColor(color)
+                .cornerRadius(12)
+        }
+    }
+
+    // MARK: - Custom Hydration Sheet
+    private var customHydrationSheet: some View {
+        NavigationStack {
+            Form {
+                Section("Enter amount (ml)") {
+                    TextField("e.g. 330", text: $customAmount)
+                        .keyboardType(.numberPad)
+                }
+            }
+            .navigationTitle("Custom Water")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") {
+                        showCustomInput = false
+                        customAmount = ""
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Add") {
+                        addCustomWater()
+                    }
+                    .disabled(customAmount.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+        }
+    }
+
+    private func addCustomWater() {
+        guard let ml = Double(customAmount), ml > 0 else { return }
+
+        let liters = ml / 1000.0
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+
+        healthManager.addManualWater(amountLiters: liters)
+
+        showCustomInput = false
+        customAmount = ""
+    }
+}
+
+// MARK: - Steps & Distance Section
+private struct StepsDistanceSection: View {
+    @ObservedObject var healthManager: HealthManager
+
+    var body: some View {
+        VStack(spacing: 14) {
+            // Title
+            HStack {
+                Text("Activity Overview")
+                    .font(.title3.bold())
+                Spacer()
+            }
+            // Card
+            VStack(spacing: 14) {
+                HStack {
+                    Label("Steps", systemImage: "figure.walk")
+                        .font(.subheadline)
+                        .foregroundColor(.primary.opacity(0.8))
+                    Spacer()
+                    Text("\(Int(healthManager.stepsToday))")
+                        .font(.title3.bold())
+                        .foregroundColor(.primary)
+                }
+                Divider()
+                HStack {
+                    Label("Distance", systemImage: "ruler")
+                        .font(.subheadline)
+                        .foregroundColor(.primary.opacity(0.8))
+                    Spacer()
+                    Text(String(format: "%.2f km", healthManager.distanceTodayKm))
+                        .font(.title3.bold())
+                        .foregroundColor(.primary)
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(Color(.systemBackground))
+                    .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 4)
+            )
+        }
+    }
+}
+
+// MARK: - Streaks Row (NEW)
+private struct StreaksRowView: View {
+
+    @ObservedObject var healthManager: HealthManager
+
+    @State private var currentStreak: Int = 0
+    @State private var bestStreak: Int = 0
+    @State private var didCompleteToday: Bool = false
+
+    private let storageKey = "fitforge.dailyStreakState"
+
+    private struct StoredStreakState: Codable {
+        var date: Date
+        var currentStreak: Int
+        var bestStreak: Int
+        var didCompleteToday: Bool
+    }
 
 
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
 
+            HStack(spacing: 8) {
+                Text("🔥 Streak")
+                    .font(.title3.bold())
 
+                if didCompleteToday {
+                    Text("Perfect today")
+                        .font(.caption.bold())
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.green.opacity(0.15))
+                        .foregroundColor(.green)
+                        .cornerRadius(10)
+                } else {
+                    Text("Keep pushing")
+                        .font(.caption.bold())
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.orange.opacity(0.12))
+                        .foregroundColor(.orange)
+                        .cornerRadius(10)
+                }
 
+                Spacer()
+            }
 
+            HStack(alignment: .center, spacing: 18) {
 
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("\(currentStreak)")
+                        .font(.system(size: 28, weight: .bold))
+                    Text("Current days")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Divider()
+                    .frame(height: 32)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("\(bestStreak)")
+                        .font(.system(size: 20, weight: .semibold))
+                    Text("Best streak")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+
+                Image(systemName: didCompleteToday ? "flame.fill" : "flame")
+                    .font(.system(size: 26, weight: .semibold))
+                    .foregroundColor(didCompleteToday ? .orange : .secondary)
+            }
+            .padding(.horizontal, 4)
+
+            Text("A perfect day = Move, Steps & Hydration rings at ≥ 80% of their goal.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color(.secondarySystemBackground))
+                .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 3)
+        )
+        .onAppear {
+            evaluateAndUpdateIfNeeded()
+        }
+        .onChange(of: healthManager.activeEnergyToday) { _, _ in
+            evaluateAndUpdateIfNeeded()
+        }
+        .onChange(of: healthManager.stepsToday) { _, _ in
+            evaluateAndUpdateIfNeeded()
+        }
+        .onChange(of: healthManager.hydrationLitersToday) { _, _ in
+            evaluateAndUpdateIfNeeded()
+        }
+    }
+
+    // MARK: - Streak Logic
+
+    private func evaluateAndUpdateIfNeeded() {
+        let active = healthManager.activeEnergyToday
+        let activeGoal = max(healthManager.activeEnergyGoal, 1)
+
+        let steps = healthManager.stepsToday
+        let stepsGoal = max(healthManager.stepsGoal, 1)
+
+        let water = healthManager.hydrationLitersToday
+        let waterGoal = max(healthManager.hydrationGoalLiters, 0.1)
+
+        let moveOK = Double(active) >= Double(activeGoal) * 0.8
+        let stepsOK = Double(steps) >= Double(stepsGoal) * 0.8
+        let waterOK = water >= waterGoal * 0.8
+
+        let isPerfectToday = moveOK && stepsOK && waterOK
+
+        updateStreakState(isPerfectToday: isPerfectToday)
+    }
+
+    private func updateStreakState(isPerfectToday: Bool) {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+
+        var stored = loadStoredState()
+
+        if let lastDate = stored?.date {
+            let lastDay = calendar.startOfDay(for: lastDate)
+
+            // Same day: just update today's completion flag, don't change streak length unless needed
+            if lastDay == today {
+                // Create a mutable copy
+                var newState = stored!
+                newState.didCompleteToday = isPerfectToday
+                stored = newState
+            } else {
+                // New day
+                let daysDiff = calendar.dateComponents([.day], from: lastDay, to: today).day ?? 0
+
+                var current = stored?.currentStreak ?? 0
+                var best = stored?.bestStreak ?? 0
+
+                if daysDiff == 1 {
+                    // Consecutive day
+                    if isPerfectToday {
+                        current += 1
+                        best = max(best, current)
+                    } else {
+                        current = 0
+                    }
+                } else {
+                    // gap of 2+ days → reset
+                    current = isPerfectToday ? 1 : 0
+                    best = max(best, current)
+                }
+
+                stored = StoredStreakState(
+                    date: today,
+                    currentStreak: current,
+                    bestStreak: best,
+                    didCompleteToday: isPerfectToday
+                )
+            }
+
+        } else {
+            // No stored state yet
+            let initialCurrent = isPerfectToday ? 1 : 0
+            stored = StoredStreakState(
+                date: today,
+                currentStreak: initialCurrent,
+                bestStreak: initialCurrent,
+                didCompleteToday: isPerfectToday
+            )
+        }
+
+        if let stored {
+            saveStoredState(stored)
+            currentStreak = max(stored.currentStreak, 0)
+            bestStreak = max(stored.bestStreak, stored.currentStreak)
+            didCompleteToday = stored.didCompleteToday
+        } else {
+            currentStreak = 0
+            bestStreak = 0
+            didCompleteToday = false
+        }
+    }
+
+    private func loadStoredState() -> StoredStreakState? {
+        guard let data = UserDefaults.standard.data(forKey: storageKey) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(StoredStreakState.self, from: data)
+    }
+
+    private func saveStoredState(_ state: StoredStreakState) {
+        if let data = try? JSONEncoder().encode(state) {
+            UserDefaults.standard.set(data, forKey: storageKey)
+        }
+    }
+}
 
