@@ -20,9 +20,25 @@ final class MealPlanStore: ObservableObject {
     // MARK: - Public API
     
     func add(plan: SavedMealPlan) {
-        plans.insert(plan, at: 0) // newest on top
-        persist()
-    }
+            // Treat a plan as a duplicate when its goal, country, macro targets,
+            // and diet preference all match an existing saved plan. We deliberately
+            // ignore rawJSON: the AI returns slightly different text for identical
+            // inputs, which made the previous exact-JSON rule never match.
+            let isDuplicate = plans.contains { existing in
+                existing.goal == plan.goal &&
+                existing.country == plan.country &&
+                existing.calories == plan.calories &&
+                existing.protein == plan.protein &&
+                existing.carbs == plan.carbs &&
+                existing.fats == plan.fats &&
+                existing.dietPreference == plan.dietPreference
+            }
+
+            guard !isDuplicate else { return }
+
+            plans.insert(plan, at: 0) // newest on top
+            persist()
+        }
     
     func delete(at offsets: IndexSet) {
         plans.remove(atOffsets: offsets)

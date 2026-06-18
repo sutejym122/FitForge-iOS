@@ -19,8 +19,10 @@ struct SavedMealPlan: Identifiable, Codable {
     let protein: Int
     let carbs: Int
     let fats: Int
-    
-    let rawJSON: String      // full mealplan JSON from backend
+
+    var dietPreference: String? = nil   // "veg" / "nonveg" / "mixed"; nil for plans saved before this field existed
+
+    let rawJSON: String      // full mealplan JSON from backend     // full mealplan JSON from backend
 }
 
 struct SavedMealPlanList: Codable {
