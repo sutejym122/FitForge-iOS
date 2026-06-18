@@ -30,3 +30,18 @@ Carthage/
 
 # Logs
 *.log
+
+# FitForge backend local files
+backend/.env
+backend/venv/
+backend/__pycache__/
+backend/*.pyc
+backend/memories.json
+
+# macOS
+.DS_Store
+
+# Local context and snapshots
+_fitforge_context/
+fitforge_context_for_chatgpt.zip
+_snapshots/
