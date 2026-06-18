@@ -19,6 +19,8 @@ struct MealPlanView: View {
     @State private var isRegenerating = false
     @State private var errorMessage: String?
 
+    @StateObject private var progress = MealProgressStore()
+
     // MARK: - Country helper
     private var resolvedCountryName: String {
         guard let profile = ProfileStorage.shared.currentProfile else {
@@ -42,6 +44,7 @@ struct MealPlanView: View {
 
                     headerSection
                     infoBannerSection
+                    progressSummarySection
                     mealCardsSection
                 }
                 .padding(.top)
@@ -61,6 +64,7 @@ struct MealPlanView: View {
         }
         .onAppear {
             parseJSON(from: jsonText)
+            progress.load(planKey: stableKey(for: jsonText))
         }
         .navigationTitle("Meal Plan")
     }
@@ -141,26 +145,64 @@ If you'd like a different type of cuisine or want me to use specific foods, tell
         .padding(.horizontal)
     }
 
-    // MARK: - MEAL CARDS
-    private var mealCardsSection: some View {
-        VStack(spacing: 16) {
-            ForEach(mealPlan) { day in
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Day \(day.day)")
-                        .font(.title3.bold())
+    // MARK: - PROGRESS SUMMARY
+        private var totalMealCount: Int { mealPlan.count * 4 }
 
-                    MealRow(title: "🍳 Breakfast", text: day.breakfast)
-                    MealRow(title: "🥗 Lunch", text: day.lunch)
-                    MealRow(title: "🍽 Dinner", text: day.dinner)
-                    MealRow(title: "🍎 Snack", text: day.snack)
+        private var progressSummarySection: some View {
+            HStack {
+                Text("Done: \(progress.completedCount) of \(totalMealCount)")
+                    .font(.subheadline.bold())
+                Spacer()
+            }
+            .padding(.horizontal)
+        }
+
+        // MARK: - MEAL CARDS
+        private var mealCardsSection: some View {
+            VStack(spacing: 16) {
+                ForEach(mealPlan) { day in
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Day \(day.day)")
+                            .font(.title3.bold())
+
+                        MealRow(title: "🍳 Breakfast", text: day.breakfast,
+                                isChecked: progress.isChecked(mealKey(day, "breakfast")),
+                                onToggle: { progress.toggle(mealKey(day, "breakfast")) })
+                        MealRow(title: "🥗 Lunch", text: day.lunch,
+                                isChecked: progress.isChecked(mealKey(day, "lunch")),
+                                onToggle: { progress.toggle(mealKey(day, "lunch")) })
+                        MealRow(title: "🍽 Dinner", text: day.dinner,
+                                isChecked: progress.isChecked(mealKey(day, "dinner")),
+                                onToggle: { progress.toggle(mealKey(day, "dinner")) })
+                        MealRow(title: "🍎 Snack", text: day.snack,
+                                isChecked: progress.isChecked(mealKey(day, "snack")),
+                                onToggle: { progress.toggle(mealKey(day, "snack")) })
+                    }
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(16)
+                    .padding(.horizontal)
                 }
-                .padding()
-                .background(Color(.systemGray6))
-                .cornerRadius(16)
-                .padding(.horizontal)
             }
         }
-    }
+
+        // MARK: - PROGRESS KEYS
+        private func mealKey(_ day: MealDay, _ slot: String) -> String {
+            "\(day.day)-\(slot)"
+        }
+
+        /// Deterministic FNV-1a 64-bit hash over the JSON bytes. Stable across
+        /// launches (unlike Swift's randomized hashValue), so progress for the same
+        /// plan content is shared across My Plans, Daily Brief, and fresh generation.
+        private func stableKey(for source: String) -> String {
+            var hash: UInt64 = 1469598103934665603
+            let prime: UInt64 = 1099511628211
+            for byte in source.utf8 {
+                hash ^= UInt64(byte)
+                hash = hash &* prime
+            }
+            return String(hash, radix: 16)
+        }
 
     // MARK: - PARSER
     private func parseJSON(from source: String) {
@@ -215,14 +257,29 @@ If you'd like a different type of cuisine or want me to use specific foods, tell
 struct MealRow: View {
     let title: String
     let text: String
+    let isChecked: Bool
+    let onToggle: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading) {
-            Text(title).font(.headline)
-            Text(text)
-                .font(.subheadline)
-                .foregroundColor(.gray)
+        Button(action: onToggle) {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: isChecked ? "checkmark.circle.fill" : "circle")
+                    .font(.title3)
+                    .foregroundColor(isChecked ? .green : .secondary)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.headline)
+                    Text(text)
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                        .strikethrough(isChecked, color: .gray)
+                }
+
+                Spacer(minLength: 0)
+            }
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
     }
 }
 
@@ -240,5 +297,47 @@ struct MealDay: Codable, Identifiable {
     let snack: String
 }
 
+// MARK: - MEAL PROGRESS STORE (local, inline; extract later if reused)
+final class MealProgressStore: ObservableObject {
+    @Published private(set) var checkedKeys: Set<String> = []
+
+    private static let storageKey = "meal_plan_progress_v1"
+    private var planKey: String = ""
+
+    var completedCount: Int { checkedKeys.count }
+
+    func load(planKey: String) {
+        self.planKey = planKey
+        checkedKeys = Set(Self.loadAll()[planKey] ?? [])
+    }
+
+    func isChecked(_ mealKey: String) -> Bool {
+        checkedKeys.contains(mealKey)
+    }
+
+    func toggle(_ mealKey: String) {
+        if checkedKeys.contains(mealKey) {
+            checkedKeys.remove(mealKey)
+        } else {
+            checkedKeys.insert(mealKey)
+        }
+        persist()
+    }
+
+    private func persist() {
+        var all = Self.loadAll()
+        all[planKey] = checkedKeys.isEmpty ? nil : Array(checkedKeys)
+        if let data = try? JSONEncoder().encode(all) {
+            UserDefaults.standard.set(data, forKey: Self.storageKey)
+        }
+    }
+
+    private static func loadAll() -> [String: [String]] {
+        guard let data = UserDefaults.standard.data(forKey: storageKey),
+              let decoded = try? JSONDecoder().decode([String: [String]].self, from: data)
+        else { return [:] }
+        return decoded
+    }
+}
 
 
