@@ -95,6 +95,9 @@ struct DashboardView: View {
 
                         // MARK: - Greeting Header
                         headerSection
+                        
+                        // MARK: - Daily Brief (NEW)
+                        dailyBriefCard
 
                         // MARK: - Weekly Progress Rings
                         ProgressRingsRow(healthManager: healthManager)
@@ -226,26 +229,7 @@ struct DashboardView: View {
                         MacroChart(result: result)
                             .frame(height: 250)
 
-                        // MARK: - Activity (Placeholders kept for future use)
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Activity")
-                                .font(.title2.bold())
-                                .frame(maxWidth: .infinity, alignment: .leading)
-
-                            HStack(spacing: 12) {
-                                SummaryMiniCard(
-                                    title: "Steps",
-                                    value: "—",
-                                    subtitle: "Connect Health later"
-                                )
-
-                                SummaryMiniCard(
-                                    title: "Distance",
-                                    value: "—",
-                                    subtitle: "Coming soon"
-                                )
-                            }
-                        }
+                       
 
                         // MARK: - Nutrition Section
                         VStack(alignment: .leading, spacing: 10) {
@@ -370,6 +354,74 @@ struct DashboardView: View {
             Spacer(minLength: 0)
         }
     }
+    
+    // MARK: - Daily Brief
+        private var dailyBrief: DailyBrief {
+            DailyBriefBuilder.make(
+                goal: profile.goal,
+                goalCalories: Int(result.goalCalories),
+                healthAuthorized: healthManager.isAuthorized,
+                waterLiters: healthManager.hydrationLitersToday,
+                waterGoalLiters: healthManager.hydrationGoalLiters,
+                sleepHours: healthManager.sleepTotalHours,
+                hasAnyPlan: !mealPlanStore.plans.isEmpty
+            )
+        }
+
+        private var dailyBriefCard: some View {
+            let brief = dailyBrief
+            return VStack(alignment: .leading, spacing: 10) {
+                Text("TODAY")
+                    .font(.caption.bold())
+                    .foregroundColor(.secondary)
+
+                Text(brief.headline)
+                    .font(.title3.bold())
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(brief.reason)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Button {
+                    performBriefAction(brief.action)
+                } label: {
+                    Text(brief.ctaTitle)
+                        .font(.subheadline.bold())
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                }
+                .padding(.top, 2)
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(Color(.secondarySystemBackground))
+                    .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
+            )
+        }
+
+        private func performBriefAction(_ action: DailyBrief.CTAAction) {
+            switch action {
+            case .generateMealPlan:
+                showDietSheet = true
+            case .openMealPlan:
+                if let latest = mealPlanStore.plans.first {
+                    mealPlanResponse = latest.rawJSON
+                    showMealPlan = true
+                } else {
+                    showDietSheet = true
+                }
+            case .addWater:
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                healthManager.addManualWater(amountLiters: 0.5)
+            }
+        }
 
     // MARK: - MEAL PLAN LOGIC
     private func generateMealPlan(for dietPreference: DietPreference) {
@@ -1028,6 +1080,91 @@ private struct StreaksRowView: View {
         if let data = try? JSONEncoder().encode(state) {
             UserDefaults.standard.set(data, forKey: storageKey)
         }
+    }
+}
+// MARK: - Daily Brief Model (kept here for now; extract to Models/DailyBrief.swift later)
+
+struct DailyBrief {
+    enum CTAAction {
+        case generateMealPlan
+        case openMealPlan
+        case addWater
+    }
+
+    let headline: String
+    let reason: String
+    let ctaTitle: String
+    let action: CTAAction
+}
+
+enum DailyBriefBuilder {
+
+    /// Pure, local, rule-based. No network, no AI. First match wins.
+    static func make(
+        goal: String,
+        goalCalories: Int,
+        healthAuthorized: Bool,
+        waterLiters: Double,
+        waterGoalLiters: Double,
+        sleepHours: Double,
+        hasAnyPlan: Bool
+    ) -> DailyBrief {
+
+        // 1. No plan yet -> get them into the core loop.
+        if !hasAnyPlan {
+            return DailyBrief(
+                headline: "Start with today's meals",
+                reason: "Generate a plan around your \(goalCalories) kcal target so today's eating is sorted.",
+                ctaTitle: "Generate Meal Plan",
+                action: .generateMealPlan
+            )
+        }
+
+        // 2. Low hydration (only when we actually have data).
+        if healthAuthorized,
+           waterGoalLiters > 0,
+           waterLiters > 0,
+           waterLiters < waterGoalLiters * 0.5 {
+            return DailyBrief(
+                headline: "Top up your water",
+                reason: "You're at \(oneDP(waterLiters))L of \(oneDP(waterGoalLiters))L today - a couple of glasses gets you back on track.",
+                ctaTitle: "Add 500 ml",
+                action: .addWater
+            )
+        }
+
+        // 3. Short sleep -> steer toward an easy, consistent day.
+        if healthAuthorized, sleepHours > 0, sleepHours < 6 {
+            return DailyBrief(
+                headline: "Keep today easy",
+                reason: "You slept \(oneDP(sleepHours))h last night - prioritize recovery and steady meals.",
+                ctaTitle: "Open today's plan",
+                action: .openMealPlan
+            )
+        }
+
+        // 4. Default: on track.
+        return DailyBrief(
+            headline: "You're set for today",
+            reason: defaultReason(goal: goal, goalCalories: goalCalories),
+            ctaTitle: "Open today's plan",
+            action: .openMealPlan
+        )
+    }
+
+    private static func defaultReason(goal: String, goalCalories: Int) -> String {
+        switch goal.lowercased() {
+        case "lose fat", "fat-loss", "fatloss":
+            return "Stay close to ~\(goalCalories) kcal and keep your rings moving."
+        case "gain muscle", "muscle", "muscle gain":
+            return "Hit ~\(goalCalories) kcal and your protein, then keep your rings moving."
+        default:
+            return "Aim for ~\(goalCalories) kcal and keep your rings moving."
+        }
+    }
+
+    private static func oneDP(_ value: Double) -> String {
+        String(format: "%.1f", value)
     }
 }
 
